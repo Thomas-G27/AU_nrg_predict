@@ -143,7 +143,7 @@ class Command:
         self._delta = [0, 0, 0]
         self._abs_delta = [0, 0, 0]
         #added stuff
-        self._a_vector = [0, 0, 0, 0]
+        self._a_vector = [0, 0, 0, 0, 0]
         self._b_vector = [0, 0, 0, 0]
         self._ab_vector = [0, 0, 0, 0]
         self._test_value = 0
@@ -190,10 +190,10 @@ class Command:
         info3 = f"; {self._ab_vector}"
         
         if self._accelerate_until != 0 and self._accelerate_until != self._decelerate_after:
-            if len(self._a_vector) == 5:
+            if len(self._a_vector) == 4:
                 return self._cmd_str.strip() + " ; --- " + info + info2 + os.linesep
-            elif len(self._a_vector) == 4:
-                return self._cmd_str.strip() + " ; --- " + info + f" {self._test_value}" + os.linesep
+            elif len(self._a_vector) == 5:
+                return self._cmd_str.strip() + " ; --- " + info + os.linesep
         elif self._accelerate_until != 0 and self._accelerate_until == self._decelerate_after:
             return self._cmd_str.strip() + " ; --- " + info + info3 + os.linesep
         else:
@@ -328,13 +328,13 @@ class Command:
                     self.calculate_trapezoid(self._entry_speed / self._nominal_feedrate, safe_speed / self._nominal_feedrate)
 
     ### MODIFICATION ONGOING
-                    if self._accelerate_until != 0 and self._accelerate_until != self._decelerate_after:
+                    if self._accelerate_until != 0.0 and self._accelerate_until != self._decelerate_after:
                         dist = self._distance - self._accelerate_until
                         a_t = self._accelerate_until / ((self._nominal_feedrate + self._entry_speed) / 2)
                         a_X = buf.current_position[0] - (float(dist/self._distance) * self._delta[0])
                         a_Y = buf.current_position[1] - (float(dist/self._distance) * self._delta[1])
                         a_Z = buf.current_position[2] - (float(dist/self._distance) * self._delta[2])
-                        self._a_vector = [a_X, a_Y, a_Z, a_t, 5]
+                        self._a_vector = [a_X, a_Y, a_Z, a_t]
                         
                         dist = self._distance - self._decelerate_after
                         b_t = dist / ((safe_speed + self._nominal_feedrate) / 2)
@@ -343,9 +343,18 @@ class Command:
                         b_Z = buf.current_position[2] - (float(dist/self._distance) * self._delta[2])
                         self._b_vector = [b_X, b_Y, b_Z, b_t]
                         
-                    if self._accelerate_until != 0 and self._accelerate_until == self._decelerate_after:
-                        self._ab_vector = [0, 1, 2, 3]
+                        #self._test_value = 0.123456
                         
+                    elif self._accelerate_until != 0.0 and self._accelerate_until == self._decelerate_after:
+                        dist = self._distance - self._accelerate_until
+                        ab_t = self._accelerate_until / ((self._nominal_feedrate + self._entry_speed) / 2)
+                        ab_X = buf.current_position[0] - (float(dist/self._distance) * self._delta[0])
+                        ab_Y = buf.current_position[1] - (float(dist/self._distance) * self._delta[1])
+                        ab_Z = buf.current_position[2] - (float(dist/self._distance) * self._delta[2])
+                        self._ab_vector = [ab_X, ab_Y, ab_Z, ab_t]
+                        #self._test_value = 1.123456
+                     #else :
+                        #self._test_value = 2.123456
                         
                         
                     self.estimated_exec_time = -1 #Signal that we need to include this in our second pass.
