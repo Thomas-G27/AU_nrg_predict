@@ -4,7 +4,7 @@ cd../..
 
 cd ecole/4A/Stage/Le contenu/Thomas_Materials_v2/Software_of_printer/Slicer
 
-cd ecole/4A/Stage/Le contenu/Thomas_Materials_v2/Software_of_printer/timer
+cd C:/ecole/4A/Stage/Le contenu/Thomas_Materials_v2/Software_of_printer/timer_v1
 
 python check_gcode_buffer.py input.gcode output.gcode
 
