@@ -8,4 +8,4 @@ cd C:/ecole/4A/Stage/Le contenu/Thomas_Materials_v2/Software_of_printer/timer_v1
 
 python check_gcode_buffer.py input.gcode output.gcode
 
-python check_gcode_buffer.py 1h03m_axle_bracket_orig.gcode output5.gcode
+python check_gcode_buffer.py 1h03m_axle_bracket_orig.gcode name_output.gcode
