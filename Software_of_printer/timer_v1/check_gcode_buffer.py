@@ -194,7 +194,7 @@ class Command:
                 return self._cmd_str.strip() + " ; --- " + info + ", -1" + info2 + os.linesep
             elif len(self._a_vector) == 6:
                 return self._cmd_str.strip() + " ; --- " + info + ", 0" + os.linesep
-        elif self._accelerate_until != 0.0 and self._accelerate_until == self._decelerate_after and len(self._a_vector) == 4:
+        elif self._accelerate_until != 0.0 and self._accelerate_until == self._decelerate_after and len(self._a_vector) == 5:
             return self._cmd_str.strip() + " ; --- " + info + ", -1" + info3 + os.linesep
         else:
             return self._cmd_str.strip() + " ; --- " + info + ", 0" + os.linesep
@@ -569,6 +569,21 @@ class CommandBuffer:
         print("Total predicted number of buffer underruns:", len(self._bad_frame_ranges))
 
 
+def main (input_gcode, output_gcode):
+    with open(input_gcode, "r", encoding = "utf-8") as f:
+        all_lines = f.readlines()
+    
+    global buf
+    buf = CommandBuffer(all_lines)
+    buf.process()
+    
+    if output_gcode is not None:
+        buf.to_file(output_gcode)
+    
+    buf.report()
+    
+    
+    
 if __name__ == "__main__":
     if len(sys.argv) < 2 or 3 < len(sys.argv):
         print("Usage: <input g-code> [output g-code]")
