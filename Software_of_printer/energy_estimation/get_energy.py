@@ -81,7 +81,7 @@ def add_nrg_comsumption(in_file, out_file):
         write_csv.writerows(nrg_lines)
 
 # Exemple d'utilisation du script
-fichier_entree = 'coord_with_infos.csv'  # Remplacer par le nom de votre fichier CSV
-fichier_sortie = 'coord_with_energy_consumption_test.csv'  # Le fichier CSV avec la consommation d'énergie
-add_nrg_comsumption(fichier_entree, fichier_sortie)
+#fichier_entree = 'coord_with_infos.csv'  # Remplacer par le nom de votre fichier CSV
+#fichier_sortie = 'coord_with_energy_consumption_test.csv'  # Le fichier CSV avec la consommation d'énergie
+#add_nrg_comsumption(fichier_entree, fichier_sortie)
 
