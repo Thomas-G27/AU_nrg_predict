@@ -568,7 +568,7 @@ class CommandBuffer:
                 speed = round(item["cmd_count"] / item["time"], 2)))
         print("Total predicted number of buffer underruns:", len(self._bad_frame_ranges))
 
-
+#function to use when calling file
 def main (input_gcode, output_gcode):
     with open(input_gcode, "r", encoding = "utf-8") as f:
         all_lines = f.readlines()
@@ -583,7 +583,7 @@ def main (input_gcode, output_gcode):
     buf.report()
     
     
-    
+#instructions when using cmd prompt
 if __name__ == "__main__":
     if len(sys.argv) < 2 or 3 < len(sys.argv):
         print("Usage: <input g-code> [output g-code]")
