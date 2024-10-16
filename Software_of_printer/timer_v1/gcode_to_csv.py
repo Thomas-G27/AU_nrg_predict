@@ -13,12 +13,12 @@ def gcode_into_csv(fichier_gcode, fichier_csv):
     time = 0.0
     # Lecture du fichier G-code
     with open(fichier_gcode, 'r') as gcode_file:
-        for ligne in gcode_file:
-            if "G" in ligne[0]:
+        for line in gcode_file:
+            if "G" in line[0]:
                 l_a = []
                 l_b = []
-                ligne.strip()
-                l = ligne.split(";",4)
+                line.strip()
+                l = line.split(";",4)
                 
                 if "=" not in l[1]:
                     l.pop(1)
@@ -86,8 +86,8 @@ def gcode_into_csv(fichier_gcode, fichier_csv):
             writer.writerow(coord)
 
 # uncomment if debug is needed
-fichier_gcode = 'output8.gcode'
-fichier_csv = 'coord_with_infos.csv'
-gcode_into_csv(fichier_gcode, fichier_csv)
+#fichier_gcode = 'output8.gcode'
+#fichier_csv = 'coord_with_infos.csv'
+#gcode_into_csv(fichier_gcode, fichier_csv)
 
 #print(f"Les coordonnées ont été sauvegardées dans {fichier_csv}.")
