@@ -1,7 +1,7 @@
 import csv
 import re
 
-def lire_gcode_et_sauvegarder_csv(fichier_gcode, fichier_csv):
+def gcode_into_csv(fichier_gcode, fichier_csv):
     # Initialisation de la dernière position connue
     derniere_position = {'X': 0, 'Y': 0, 'Z': 0}
 
@@ -19,35 +19,18 @@ def lire_gcode_et_sauvegarder_csv(fichier_gcode, fichier_csv):
                 l_b = []
                 ligne.strip()
                 l = ligne.split(";",4)
-                """
-                if len(l) == 2:
-                    coord = {}
-                    
-                    # Recherche des coordonnées dans la ligne
-                    for match in regex_coord.finditer(l(1)):
-                        
-                        axe = match.group(1)  # 'X', 'Y', ou 'Z'
-                        valeur = float(match.group(2))
-                        derniere_position[axe] = valeur  # Mise à jour de la dernière valeur connue pour cet axe
-        
-                    # Ajout de la dernière position connue pour chaque axe
-                    coord['X'] = derniere_position['X']
-                    coord['Y'] = derniere_position['Y']
-                    coord['Z'] = derniere_position['Z']
-                    
-                    # On ajoute les coordonnées extraites
-                        
-                    coordonnees.append(coord)
-                """
+                
+                if "=" not in l[1]:
+                    l.pop(1)
                 if len(l) == 4:
                     l_a = l[2].split(",")
                     l_b = l[3].split(",")
-                elif len(l) == 5:
-                    l_a = l[3].split(",")
-                    l_b = l[4].split(",")
+                elif len(l) == 3:
+                    l_a = l[1].split(",")
+                    l_b = l[2].split(",")
                     
-                    #coordinates of end of acceleration
-                if len(l_a) > 1:
+                #coordinates of end of acceleration
+                if len(l_a) > 2:
                     coord = {}
                     coord['X'] = float(l_a[0][2:])
                     coord['Y'] = float(l_a[1])
@@ -58,13 +41,14 @@ def lire_gcode_et_sauvegarder_csv(fichier_gcode, fichier_csv):
                     coordonnees_time.append(coord)
                     
                 #coordinates of end of plateau
-                if len(l_b) > 1:
+                if len(l_b) > 2:
                     coord = {}
                     coord['X'] = float(l_b[0][2:])
                     coord['Y'] = float(l_b[1])
                     coord['Z'] = float(l_b[2])
                     coord['T'] = time + float(l_b[3])
-                    coord['A'] = int(l_b[4][:-3])
+                    try: coord['A'] = int(l_b[4][:-2])
+                    except: coord['A'] = int(l_b[4][:-3])
                     
                     coordonnees_time.append(coord)
                 
@@ -101,9 +85,9 @@ def lire_gcode_et_sauvegarder_csv(fichier_gcode, fichier_csv):
         for coord in coordonnees_time:
             writer.writerow(coord)
 
-# Utilisation de la fonction
-fichier_gcode = 'output7.gcode'
-fichier_csv = 'test_lect_file4.csv'
-lire_gcode_et_sauvegarder_csv(fichier_gcode, fichier_csv)
+# uncomment if debug is needed
+fichier_gcode = 'output8.gcode'
+fichier_csv = 'coord_with_infos.csv'
+gcode_into_csv(fichier_gcode, fichier_csv)
 
-print(f"Les coordonnées ont été sauvegardées dans {fichier_csv}.")
+#print(f"Les coordonnées ont été sauvegardées dans {fichier_csv}.")
