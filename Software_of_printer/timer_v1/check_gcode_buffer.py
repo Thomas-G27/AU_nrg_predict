@@ -338,7 +338,7 @@ class Command:
                         
                         #if self._accelerate_until != self._decelerate_after:
                         dist = self._distance - self._decelerate_after
-                        b_t = dist / ((safe_speed + self._nominal_feedrate) / 2)
+                        b_t = (self._decelerate_after - self._accelerate_until) / self._nominal_feedrate
                         b_X = buf.current_position[0] - (float(dist/self._distance) * self._delta[0])
                         b_Y = buf.current_position[1] - (float(dist/self._distance) * self._delta[1])
                         b_Z = buf.current_position[2] - (float(dist/self._distance) * self._delta[2])
@@ -353,12 +353,14 @@ class Command:
 
         # G4: Dwell, pause the machine for a period of time.
     ### MODIFIED (added lenght condition)
-        elif cmd_num == 4 and len(parts)>1:
+        elif cmd_num == 4 and len(parts)>=1:
             # Pnnn is time to wait in milliseconds (P0 wait until all previous moves are finished)
             cmd, num = get_code_and_num(parts[1])
             num = float(num)
-            if cmd == "P":
-                if num > 0:
+            if num > 0:
+                if cmd == "P":
+                    self.estimated_exec_time = num/1000
+                elif cmd == "S":
                     self.estimated_exec_time = num
 
     def _handle_m(self, cmd_num: int, parts: List[str]) -> None:
@@ -568,7 +570,7 @@ class CommandBuffer:
                 speed = round(item["cmd_count"] / item["time"], 2)))
         print("Total predicted number of buffer underruns:", len(self._bad_frame_ranges))
 
-#function to use when calling file
+
 def main (input_gcode, output_gcode):
     with open(input_gcode, "r", encoding = "utf-8") as f:
         all_lines = f.readlines()
@@ -583,7 +585,7 @@ def main (input_gcode, output_gcode):
     buf.report()
     
     
-#instructions when using cmd prompt
+    
 if __name__ == "__main__":
     if len(sys.argv) < 2 or 3 < len(sys.argv):
         print("Usage: <input g-code> [output g-code]")
