@@ -17,10 +17,10 @@ DEFAULT_BUFFER_SIZE = 15  # The buffer size in #commands
 MINIMUM_PLANNER_SPEED = 0.05
 
 #Setting values for Ultimaker S5.
-MACHINE_MAX_FEEDRATE_X = 300
-MACHINE_MAX_FEEDRATE_Y = 300
-MACHINE_MAX_FEEDRATE_Z = 40
-MACHINE_MAX_FEEDRATE_E = 45
+MACHINE_MAX_FEEDRATE_X = 200
+MACHINE_MAX_FEEDRATE_Y = 200
+MACHINE_MAX_FEEDRATE_Z = 12
+MACHINE_MAX_FEEDRATE_E = 120
 MACHINE_MAX_ACCELERATION_X = 1000
 MACHINE_MAX_ACCELERATION_Y = 1000
 MACHINE_MAX_ACCELERATION_Z = 200
@@ -29,7 +29,7 @@ MACHINE_MAX_JERK_XY = 8
 MACHINE_MAX_JERK_Z = 0.4
 MACHINE_MAX_JERK_E = 4.5
 MACHINE_MINIMUM_FEEDRATE = 0.001
-MACHINE_ACCELERATION = 3000
+MACHINE_ACCELERATION = 1000
 
 
 def get_code_and_num(gcode_line: str) -> Tuple[str, str]:
@@ -143,8 +143,8 @@ class Command:
         self._delta = [0, 0, 0]
         self._abs_delta = [0, 0, 0]
         #added stuff
-        self._a_vector = [0, 0, 0, 0, 0, 0]
-        self._b_vector = [0, 0, 0, 0, 0]
+        self._a_vector = [0, 0, 0, 0, 0, 0, 0]
+        self._b_vector = [0, 0, 0, 0, 0, 0, 0]
         self._ab_vector = [0, 0, 0, 0]
         self._test_value = 0
 
@@ -186,19 +186,20 @@ class Command:
             return self._cmd_str
 
         info = "t=%s " % (self.estimated_exec_time)
-        info2 = f"; {self._a_vector} ; {self._b_vector} "
-        info3 = f"; {self._a_vector}"
-        
+        infoa = f"; {self._a_vector}"
+        infob = f"; {self._b_vector}"
+        info2 = infoa + infob
         if self._accelerate_until != 0.0 and self._accelerate_until != self._decelerate_after:
-            if len(self._a_vector) == 5:
-                return self._cmd_str.strip() + " ; --- " + info + ", -1" + info2 + os.linesep
-            elif len(self._a_vector) == 6:
-                return self._cmd_str.strip() + " ; --- " + info + ", 0" + os.linesep
-        elif self._accelerate_until != 0.0 and self._accelerate_until == self._decelerate_after and len(self._a_vector) == 5:
-            return self._cmd_str.strip() + " ; --- " + info + ", -1" + info3 + os.linesep
+            if len(self._a_vector) == 6:
+                return self._cmd_str.strip() + " ; --- " + info + f", -1, feedrate = {self._final_feedrate*60}" + info2 + os.linesep
+            elif len(self._a_vector) == 7:
+                return self._cmd_str.strip() + " ; --- " + info + f", -1, feedrate = {self._final_feedrate*60}" + infob + os.linesep
+        elif self._accelerate_until != 0.0 and self._accelerate_until == self._decelerate_after and len(self._a_vector) == 6:
+            return self._cmd_str.strip() + " ; --- " + info + f", -1, feedrate = {self._final_feedrate*60}" + infoa + os.linesep
+        elif self._accelerate_until == 0 and len(self._b_vector) == 6 and self._distance != self._decelerate_after:
+            return self._cmd_str.strip() + " ; --- " + info + f", 0, feedrate = {self._final_feedrate*60}" + infob + f",{self._accelerate_until} & {self._decelerate_after} & {self._distance}" + os.linesep
         else:
             return self._cmd_str.strip() + " ; --- " + info + ", 0" + os.linesep
-
     def parse(self) -> None:
         """Estimates the execution time of this command and calculates the state after this command is executed."""
 
@@ -253,7 +254,7 @@ class Command:
                 new_position[1] = float(value_dict.get("Y", new_position[1]))
                 new_position[2] = float(value_dict.get("Z", new_position[2]))
                 new_position[3] = float(value_dict.get("E", new_position[3]))
-                buf.current_feedrate = float(value_dict.get("F", buf.current_feedrate * 60.0)) / 60.0
+                buf.current_feedrate = float(value_dict.get("F", buf.current_feedrate * 60.0)) / 60.0 #get from mm/min to mm/s
                 if buf.current_feedrate < MACHINE_MINIMUM_FEEDRATE:
                     buf.current_feedrate = MACHINE_MINIMUM_FEEDRATE
 
@@ -302,7 +303,7 @@ class Command:
                     if current_abs_feedrate[3] > buf.max_e_jerk / 2:
                         vmax_junction = min(vmax_junction, buf.max_e_jerk)
                     vmax_junction = min(vmax_junction, self._nominal_feedrate)
-                    safe_speed = vmax_junction
+                    
 
                     if buf.previous_nominal_feedrate > 0.0001:
                         xy_jerk = math.sqrt((current_feedrate[0] - buf.previous_feedrate[0]) ** 2 + (current_feedrate[1] - buf.previous_feedrate[1]) ** 2)
@@ -314,7 +315,8 @@ class Command:
                         if abs(current_feedrate[3] - buf.previous_feedrate[3]) > MACHINE_MAX_JERK_E:
                             vmax_junction_factor = min(vmax_junction_factor, (MACHINE_MAX_JERK_E / abs(current_feedrate[3] - buf.previous_feedrate[3])))
                         vmax_junction = min(buf.previous_nominal_feedrate, vmax_junction * vmax_junction_factor) #Limit speed to max previous speed.
-
+                    
+                    safe_speed = vmax_junction
                     self._max_entry_speed = vmax_junction
                     v_allowable = calc_max_allowable_speed(-self._acceleration, MINIMUM_PLANNER_SPEED, self._distance)
                     self._entry_speed = min(vmax_junction, v_allowable)
@@ -330,24 +332,24 @@ class Command:
     ### MODIFICATION ONGOING
                     if self._accelerate_until != 0.0 :
                         dist = self._distance - self._accelerate_until
-                        a_t = self._accelerate_until / ((self._nominal_feedrate + self._entry_speed) / 2)
+                        a_t = calc_acceleration_time_from_distance(self._entry_speed, self._accelerate_until, self._acceleration)
                         a_X = buf.current_position[0] - (float(dist/self._distance) * self._delta[0])
                         a_Y = buf.current_position[1] - (float(dist/self._distance) * self._delta[1])
                         a_Z = buf.current_position[2] - (float(dist/self._distance) * self._delta[2])
-                        self._a_vector = [a_X, a_Y, a_Z, a_t, 1]
+                        a_s = self._entry_speed + (self._acceleration * a_t)
+                        self._a_vector = [a_X, a_Y, a_Z, a_t, a_s*60, 1]
                         
-                        #if self._accelerate_until != self._decelerate_after:
+                    if self._decelerate_after != 0.0 :
                         dist = self._distance - self._decelerate_after
-                        b_t = (self._decelerate_after - self._accelerate_until) / self._nominal_feedrate
+                        b_t = calc_acceleration_time_from_distance(self._final_feedrate, dist, self._acceleration)
                         b_X = buf.current_position[0] - (float(dist/self._distance) * self._delta[0])
                         b_Y = buf.current_position[1] - (float(dist/self._distance) * self._delta[1])
                         b_Z = buf.current_position[2] - (float(dist/self._distance) * self._delta[2])
-                        self._b_vector = [b_X, b_Y, b_Z, b_t, 0]
-                        
-                        #self._test_value = 1.123456
-                     #else :
-                        #self._test_value = 2.123456
-                        
+                        if len(self._a_vector) == 7 :
+                            b_s = self._final_feedrate + (self._acceleration * b_t)
+                        else :
+                            b_s = a_s
+                        self._b_vector = [b_X, b_Y, b_Z, b_t, b_s*60, 0]
                         
                     self.estimated_exec_time = -1 #Signal that we need to include this in our second pass.
 
